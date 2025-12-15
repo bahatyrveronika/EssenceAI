@@ -1,19 +1,78 @@
-Telegram Perfume Recommendation Bot
-Overview
-This project implements a Telegram bot for perfume recommendation based on vector similarity search, large language model assistance, and user preference profiling. The system processes free-text user queries, converts them into vector representations, retrieves semantically similar perfumes from a vector database, and generates structured natural-language responses.
-Architecture
-The system consists of a Telegram bot built with aiogram and FSM-based dialog management, an embedding layer based on sentence-transformers, a vector search layer implemented using Weaviate Cloud, an LLM integration layer using Claude 3.5 Sonnet via OpenRouter, and a local SQLite database for storing user profiles and preferences.
-Technology Stack
-The project is implemented in Python 3.11+. Telegram interaction is handled by aiogram 3.3.0. Text embeddings are generated using the sentence-transformers model all-MiniLM-L6-v2 with a vector dimension of 384. Vector storage and search are provided by Weaviate Cloud using an HNSW index. Natural language understanding and response generation are performed by Claude 3.5 Sonnet. User data is stored in SQLite.
-Data Processing
-Source data is provided in CSV format and contains structured perfume information. During preprocessing, URLs are normalized, aromatic accords are merged into a single textual field, obsolete columns are removed, and a unified textual description is generated for each perfume. The final dataset contains perfume URLs and their corresponding descriptions and is used for vectorization.
-Vectorization and Search
-All perfume descriptions and user queries are embedded using the same transformer model. Search is performed by querying Weaviate with the query embedding to retrieve nearest neighbors. Retrieved candidates are reranked using cosine similarity computed on full descriptions to improve precision.
-Search Modes
-Description-based search validates and normalizes the user query via the LLM, embeds the normalized text, performs vector search, reranks the results, and filters out candidates below a similarity threshold of 0.5. Similar-perfume search extracts a perfume name using the LLM, builds a query from its notes, performs vector search with gender filtering, applies reranking, and uses a lower similarity threshold of 0.39.
-LLM Integration
-Claude 3.5 Sonnet is used for query validation, aromatic note normalization, and response generation. Low temperature is applied for validation and normalization tasks, while a moderate temperature is used for generating recommendations. All LLM requests are subject to a fixed timeout.
-User Profiling
-User profiles are stored in SQLite and contain Telegram user identifiers, selected gender, liked perfumes, and aggregated liked notes. Liked notes are used to construct personalized queries for preference-based recommendations.
-Deployment
-Configuration is provided via environment variables for the Telegram bot token, Weaviate credentials, and OpenRouter API key. Data preprocessing and vector ingestion are performed once before deployment. The embedding model and database connections are initialized at application startup.
+# Telegram Perfume Recommendation Bot
+
+A Telegram-based recommendation system for perfumes using vector similarity search, LLM-assisted query understanding, and user preference profiling.
+
+---
+
+## Overview
+
+The system processes free-text user queries, converts them into vector embeddings, retrieves semantically similar perfumes from a vector database, and generates natural-language recommendations. It supports description-based search, similarity search to a known perfume, and personalized recommendations based on user history.
+
+---
+
+## Architecture
+
+Telegram interaction is implemented using aiogram with FSM-based dialog control.  
+Text understanding, note normalization, and response generation are handled by Claude 3.5 Sonnet via OpenRouter.  
+Text embeddings are generated using a sentence-transformers model and stored in Weaviate Cloud.  
+User profiles and preferences are persisted in a local SQLite database.
+
+---
+
+## Technology Stack
+
+Python 3.11+ is used as the runtime environment.  
+Telegram bot logic is implemented with aiogram 3.3.0.  
+Embeddings are generated using `all-MiniLM-L6-v2` with a vector size of 384.  
+Vector storage and similarity search are handled by Weaviate Cloud with an HNSW index.  
+LLM integration is provided by Claude 3.5 Sonnet via OpenRouter API.  
+User data is stored in SQLite.
+
+---
+
+## Data Processing
+
+Raw perfume data is loaded from CSV files and preprocessed by normalizing URLs, merging aromatic accords, removing deprecated fields, and generating a unified textual description per perfume.  
+The resulting dataset contains only perfume URLs and their generated descriptions and is used as input for vectorization.
+
+---
+
+## Vector Search
+
+All perfume descriptions and user queries are embedded using the same transformer model.  
+Search is performed by querying Weaviate with the query embedding to retrieve nearest neighbors.  
+Results are reranked using cosine similarity computed on full descriptions to improve precision.
+
+---
+
+## Search Modes
+
+Description-based search validates and normalizes the user query using the LLM, performs vector search, reranks results, and filters candidates below a similarity threshold of 0.5.  
+Similarity-based search extracts a reference perfume name via the LLM, builds a query from its notes, applies gender filtering, reranks candidates, and uses a lower similarity threshold of 0.39.
+
+---
+
+## LLM Usage
+
+Claude 3.5 Sonnet is used for query validation, aromatic note normalization, and final response generation.  
+Low temperature is applied for validation and normalization tasks, while a moderate temperature is used for recommendation generation.  
+All requests are executed with a fixed timeout.
+
+---
+
+## User Profiles
+
+User data is stored in SQLite and includes Telegram user ID, selected gender, liked perfumes, and aggregated liked notes.  
+Liked notes are used to construct personalized queries for preference-based recommendations.
+
+---
+
+## Configuration
+
+Create a `.env` file with the following variables:
+
+```env
+TOKEN=telegram_bot_token
+WEAVIATE_URL=weaviate_cluster_url
+WEAVIATE_API_KEY=weaviate_api_key
+OPENROUTER_KEY=openrouter_api_key
